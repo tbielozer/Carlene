@@ -1,0 +1,437 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Child's Car</title>
+    <style>
+      body { 
+        font-family: sans-serif; 
+        background-color: navy;
+      }
+      img { width: 100%; max-width: 960px; height: auto; }
+      pre { background: #111; color: #0f0; padding: 10px; }
+      
+      /* Cameras Side By Side */
+      .camera-grid {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        width: 100%;
+        margin: 0 auto;
+      }
+
+      .camera {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+
+      .camera h3 {
+        margin: 8px 0 8px 0;
+        color: tan;
+        font-size: 18px;
+      }
+
+      .camera img {
+        display: block;
+        width: 100%;
+        max-width: none;
+        height: auto;
+        border-radius: 6px;
+        transform: rotate(180deg);
+      }
+      
+      .drive-status {
+        width: 400px;
+        padding: 20px;
+        margin: 20px auto;
+        background: tan;
+        color: navy;
+        border: 2px solid navy;
+        border-radius: 12px;
+        font-family: monospace;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.25);
+      }
+            
+      .car-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        width: 100%;
+        box-sizing: border-box;
+        padding: 20px;
+
+        background: white;
+        border-radius: 12px;
+        min-height: 150px;
+      }
+
+      .car-header h2 {
+        margin: 0;
+        color: navy;
+        font-size: 30px;
+      }
+
+      .car-header img {
+        width: 200px;
+        height: 150px;
+        object-fit: contain;
+      }
+      
+      /* =========================
+   MINI CAR
+   Car faces RIGHT →
+   ========================= */
+
+    #car {
+        position: relative;
+
+        width: 300px;
+        height: 180px;
+
+        margin: 30px auto;
+
+        /* Just so you can see the area */
+        /* background: rgba(255, 255, 255, 0.08); */
+
+        border-radius: 15px;
+    }
+
+
+    /* =========================
+       CAR BODY
+       ========================= */
+
+    #car .body {
+        position: absolute;
+
+        left: 45px;
+        top: 40px;
+
+        width: 210px;
+        height: 100px;
+
+        background: #d32f2f;
+
+        border-radius: 20px 35px 35px 20px;
+
+        box-shadow:
+            0 4px 8px rgba(0,0,0,0.4);
+    }
+
+    /* =========================
+       WHEELS
+       ========================= */
+
+    #car .wheel {
+        position: absolute;
+
+        width: 40px;
+        height: 20px;
+
+        background: #111;
+
+        border-radius: 6px;
+
+        box-shadow:
+            inset 0 0 0 3px #333,
+            0 2px 4px rgba(0,0,0,0.5);
+    }
+
+
+    /* =========================
+       REAR WHEELS
+       ========================= */
+
+    #car .rear-left {
+        position: absolute;
+
+        left: 60px;
+        top: 30px;
+    }
+
+    #car .rear-right {
+        position: absolute;
+
+        left: 60px;
+        top: 130px;
+    }
+
+
+    /* =========================
+       FRONT WHEEL PIVOTS
+       ========================= */
+
+    #car .wheel-pivot {
+        position: absolute;
+
+        width: 18px;
+        height: 50px;
+
+        transform-origin:  20px 10px;
+
+        z-index: 5;
+    }
+
+
+    /* Front = RIGHT side of car */
+
+    #car .front-left {
+        left: 185px;
+        top: 30px;
+    }
+
+    #car .front-right {
+        left: 185px;
+        top: 130px;
+    }
+    </style>
+  </head>
+  <body>
+    <div class="car-header">
+      <h2>Carlene</h2>
+      <div id="driveStatus" class="drive-status">STOP</div>
+      <img src="/car-logo" />
+    </div>
+    
+
+    <div class="camera-grid">      
+      <div class="camera">
+        <h3>Forward Feed</h3>
+        <img src="/video_feed/1" />
+      </div>
+    </div>
+    
+    <div id="car">
+        <div class="body"></div>
+
+        <div class="wheel-pivot front-left">
+            <div class="wheel"></div>
+        </div>
+
+        <div class="wheel-pivot front-right">
+            <div class="wheel"></div>
+        </div>
+
+        <div class="wheel rear-left"></div>
+        <div class="wheel rear-right"></div>
+    </div>
+
+    <pre id="log"></pre>
+      <script>
+      const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+      const log = document.getElementById('log');
+        const wsUrl = `${wsProtocol}//${location.host}/ws`;
+
+      console.log("Connecting to:", wsUrl);
+      log.textContent += "Connecting to " + wsUrl + "\\n";
+
+      const ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("=== WEBSOCKET CONNECTED ===");
+        log.textContent += "WebSocket connected\\n";
+      };
+
+      ws.onmessage = (ev) => {
+        console.log("RX:", ev.data);
+        log.textContent += "RX: " + ev.data + "\\n";
+        
+        const data = JSON.parse(ev.data);
+
+        const angle = data.steering;
+
+        document.querySelector(".front-left")
+            .style.transform = `rotate(${angle}deg)`;
+
+        document.querySelector(".front-right")
+            .style.transform = `rotate(${angle}deg)`;
+      };
+
+      ws.onclose = (ev) => {
+        console.log("=== WEBSOCKET CLOSED ===", ev.code, ev.reason);
+        log.textContent += "WebSocket closed: " + ev.code + "\\n";
+      };
+
+      ws.onerror = (ev) => {
+        console.error("=== WEBSOCKET ERROR ===", ev);
+        log.textContent += "WebSocket error\\n";
+      };
+      
+      //Audio functions
+      let audioStream = null;
+      let audioWs = null;
+      let mediaRecorder = null;
+      let audioStreaming = false;
+
+        async function startAudio() {
+            if (audioStreaming) return;
+            audioStreaming = true;   // set immediately, before any await
+            console.log("START AUDIO");
+            try {
+                const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+                audioWs = new WebSocket(`${wsProtocol}//${location.host}/audio`);
+                audioWs.binaryType = "arraybuffer";
+
+                audioWs.onopen = async () => {
+                    try {
+                        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                        mediaRecorder = new MediaRecorder(audioStream, { mimeType: "audio/webm;codecs=opus" });
+                        mediaRecorder.ondataavailable = (event) => {
+                            if (event.data.size > 0 && audioWs.readyState === WebSocket.OPEN) {
+                                audioWs.send(event.data);
+                            }
+                        };
+                        mediaRecorder.start(100);
+                    } catch (err) {
+                        console.error("MICROPHONE ERROR:", err.name, err.message);
+                        audioStreaming = false;
+                    }
+                };
+
+                audioWs.onerror = (event) => {
+                    console.error("AUDIO WEBSOCKET ERROR", event);
+                    audioStreaming = false;
+                };
+
+                audioWs.onclose = (event) => {
+                    console.log("AUDIO WEBSOCKET CLOSED", event.code, event.reason);
+                    audioStreaming = false;
+                };
+
+            } catch (err) {
+                audioStreaming = false;
+                console.error("AUDIO START ERROR:", err);
+            }
+        }
+
+      function stopAudio() {
+          if (!audioStreaming) return;
+
+          audioStreaming = false;
+
+          if (mediaRecorder) {
+              mediaRecorder.stop();
+              mediaRecorder = null;
+          }
+
+          if (audioWs) {
+              audioWs.close();
+              audioWs = null;
+          }
+
+          if (audioStream) {
+              audioStream.getTracks().forEach(track => track.stop());
+              audioStream = null;
+          }
+
+          console.log("🔇 Audio stopped");
+      }
+
+
+      // Track currently held arrow keys
+      const keys = {
+        ArrowUp: false,
+        ArrowDown: false,
+        ArrowLeft: false,
+        ArrowRight: false
+      };
+
+      function sendDrive() {
+
+        const message = {
+          type: "drive",
+          forward: keys.ArrowUp,
+          backward: keys.ArrowDown,
+          left: keys.ArrowLeft,
+          right: keys.ArrowRight
+        };
+           
+        const directions = [];
+
+        if (message.forward) {
+          directions.push("FORWARD");
+        } else if (message.backward) {
+          directions.push("BACKWARD");
+        }
+
+        if (message.left) {
+          directions.push("LEFT");
+        } else if (message.right) {
+          directions.push("RIGHT");
+        }
+
+        const display = directions.length ? directions.join(" + ") : "STOP";
+
+        console.log(`🚗 ${display}`);
+
+        document.getElementById("driveStatus").textContent = "STATUS: " + display;
+
+        console.log("SENDING DRIVE:", message);
+
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(message));
+        } else {
+          log.textContent += "WS NOT OPEN: " + ws.readyState + "\\n";
+        }
+      }
+
+
+      // KEY DOWN
+      window.addEventListener("keydown", function(event) {
+
+        if (event.code === "Space") {
+            event.preventDefault();
+
+            if (!event.repeat) {
+                startAudio();
+            }
+
+            return;
+        }
+
+        // Is this one of our arrow keys?
+        if (!Object.prototype.hasOwnProperty.call(keys, event.key)) {
+          return;
+        }
+
+        event.preventDefault();
+
+        // Ignore key-repeat
+        if (keys[event.key] === true) {
+          return;
+        }
+
+        keys[event.key] = true;
+
+        sendDrive();
+      });
+
+
+      // KEY UP
+      window.addEventListener("keyup", function(event) {
+        if (event.code === "Space") {
+            event.preventDefault();
+            stopAudio();
+            return;
+        }
+
+        console.log("KEY UP:", event.key);
+
+        if (!Object.prototype.hasOwnProperty.call(keys, event.key)) {
+          return;
+        }
+
+        event.preventDefault();
+
+        keys[event.key] = false;
+
+        sendDrive();
+      });
+    </script>
+  </body>
+</html>
