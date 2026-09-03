@@ -645,6 +645,15 @@ INDEX_HTML = """
         } else {
           log.textContent += "WS NOT OPEN: " + ws.readyState + "\\n";
         }
+
+            // Mute car audio while driving, resume once stopped
+        const isMoving = message.forward || message.backward;
+
+        if (isMoving) {
+            stopCarAudio();
+        } else {
+            startCarAudio();
+        }
       }
 
 
@@ -656,6 +665,7 @@ INDEX_HTML = """
 
             if (!event.repeat) {
                 startAudio();
+                stopCarAudio();
             }
 
             return;
@@ -684,6 +694,7 @@ INDEX_HTML = """
         if (event.code === "Space") {
             event.preventDefault();
             stopAudio();
+            startCarAudio();
             return;
         }
 
