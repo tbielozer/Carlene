@@ -9,7 +9,7 @@
         font-family: sans-serif; 
         background-color: navy;
       }
-      img { width: 100%; max-width: 960px; height: auto; }
+      img { width: 100%; max-width: 480px; height: auto; }
       pre { background: #111; color: #0f0; padding: 10px; }
       
       /* Cameras Side By Side */
@@ -32,14 +32,14 @@
         font-size: 18px;
       }
 
-      .camera img {
-        display: block;
-        width: 100%;
-        max-width: none;
-        height: auto;
-        border-radius: 6px;
-        transform: rotate(180deg);
-      }
+		.camera img {
+			display: block;
+			width: 50%;
+			max-width: none;
+			height: auto;
+			margin: 0 auto;
+			border-radius: 6px;
+		}
       
       .drive-status {
         width: 400px;
@@ -195,6 +195,7 @@
     <div class="car-header">
       <h2>Carlene</h2>
       <div id="driveStatus" class="drive-status">STOP</div>
+      <button id="carAudioBtn">🔊 Listen to car</button>
       <img src="/car-logo" />
     </div>
     
@@ -220,6 +221,7 @@
         <div class="wheel rear-left"></div>
         <div class="wheel rear-right"></div>
     </div>
+    
 
     <pre id="log"></pre>
       <script>
@@ -378,6 +380,15 @@
         } else {
           log.textContent += "WS NOT OPEN: " + ws.readyState + "\\n";
         }
+
+            // Mute car audio while driving, resume once stopped
+        const isMoving = message.forward || message.backward;
+
+        if (isMoving) {
+            stopCarAudio();
+        } else {
+            startCarAudio();
+        }
       }
 
 
@@ -389,6 +400,7 @@
 
             if (!event.repeat) {
                 startAudio();
+                stopCarAudio();
             }
 
             return;
@@ -417,6 +429,7 @@
         if (event.code === "Space") {
             event.preventDefault();
             stopAudio();
+            startCarAudio();
             return;
         }
 
@@ -432,6 +445,75 @@
 
         sendDrive();
       });
-    </script>
+
+      let carAudioCtx = null;
+        let carAudioWs = null;
+        let carAudioNextTime = 0;
+        const CAR_AUDIO_SAMPLE_RATE = 16000;
+
+        function startCarAudio() {
+            if (carAudioWs) return;
+
+            carAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            carAudioNextTime = carAudioCtx.currentTime;
+
+            const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+            carAudioWs = new WebSocket(`${wsProtocol}//${location.host}/car_audio`);
+            carAudioWs.binaryType = "arraybuffer";
+
+            carAudioWs.onopen = () => {
+                console.log("Car audio connected");
+                document.getElementById("carAudioBtn").textContent = "🔊 Listening...";
+            };
+
+            carAudioWs.onmessage = (ev) => {
+                const int16 = new Int16Array(ev.data);
+                const float32 = new Float32Array(int16.length);
+                for (let i = 0; i < int16.length; i++) {
+                    float32[i] = int16[i] / 32768;
+                }
+
+                const buffer = carAudioCtx.createBuffer(1, float32.length, CAR_AUDIO_SAMPLE_RATE);
+                buffer.copyToChannel(float32, 0);
+
+                const source = carAudioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(carAudioCtx.destination);
+
+                // Schedule back-to-back so chunks don't overlap or gap
+                const startAt = Math.max(carAudioNextTime, carAudioCtx.currentTime);
+                source.start(startAt);
+                carAudioNextTime = startAt + buffer.duration;
+            };
+
+            carAudioWs.onclose = () => {
+                console.log("Car audio disconnected");
+                carAudioWs = null;
+                document.getElementById("carAudioBtn").textContent = "🔊 Listen to car";
+            };
+
+            carAudioWs.onerror = (err) => console.error("Car audio error", err);
+        }
+
+        function stopCarAudio() {
+            if (carAudioWs) {
+                carAudioWs.close();
+                carAudioWs = null;
+            }
+            if (carAudioCtx) {
+                carAudioCtx.close();
+                carAudioCtx = null;
+            }
+            document.getElementById("carAudioBtn").textContent = "🔊 Listen to car";
+        }
+
+        document.getElementById("carAudioBtn").addEventListener("click", () => {
+            if (carAudioWs) {
+                stopCarAudio();
+            } else {
+                startCarAudio();
+            }
+        });
+	</script>
   </body>
 </html>
