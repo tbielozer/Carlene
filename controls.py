@@ -35,8 +35,9 @@ left_pin.off()
 
 app = FastAPI()
 
-# PulseAudio source name for the car's microphone
+# Microphone configuration
 MIC_SOURCE = "bluez_input.00:6A:8E:0E:E7:32"
+CAR_AUDIO_SAMPLE_RATE = 16000  # good enough for voice, keeps bandwidth low
 
 # Rotary encoder
 encoder = RotaryEncoder(16, 26)
@@ -459,6 +460,7 @@ INDEX_HTML = """
     <div class="car-header">
       <h2>Carlene</h2>
       <div id="driveStatus" class="drive-status">STOP</div>
+      <button id="carAudioBtn">🔊 Listen to car</button>
       <img src="/car-logo" />
     </div>
     
@@ -697,6 +699,75 @@ INDEX_HTML = """
 
         sendDrive();
       });
+
+      let carAudioCtx = null;
+        let carAudioWs = null;
+        let carAudioNextTime = 0;
+        const CAR_AUDIO_SAMPLE_RATE = 16000;
+
+        function startCarAudio() {
+            if (carAudioWs) return;
+
+            carAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            carAudioNextTime = carAudioCtx.currentTime;
+
+            const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+            carAudioWs = new WebSocket(`${wsProtocol}//${location.host}/car_audio`);
+            carAudioWs.binaryType = "arraybuffer";
+
+            carAudioWs.onopen = () => {
+                console.log("Car audio connected");
+                document.getElementById("carAudioBtn").textContent = "🔊 Listening...";
+            };
+
+            carAudioWs.onmessage = (ev) => {
+                const int16 = new Int16Array(ev.data);
+                const float32 = new Float32Array(int16.length);
+                for (let i = 0; i < int16.length; i++) {
+                    float32[i] = int16[i] / 32768;
+                }
+
+                const buffer = carAudioCtx.createBuffer(1, float32.length, CAR_AUDIO_SAMPLE_RATE);
+                buffer.copyToChannel(float32, 0);
+
+                const source = carAudioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(carAudioCtx.destination);
+
+                // Schedule back-to-back so chunks don't overlap or gap
+                const startAt = Math.max(carAudioNextTime, carAudioCtx.currentTime);
+                source.start(startAt);
+                carAudioNextTime = startAt + buffer.duration;
+            };
+
+            carAudioWs.onclose = () => {
+                console.log("Car audio disconnected");
+                carAudioWs = null;
+                document.getElementById("carAudioBtn").textContent = "🔊 Listen to car";
+            };
+
+            carAudioWs.onerror = (err) => console.error("Car audio error", err);
+        }
+
+        function stopCarAudio() {
+            if (carAudioWs) {
+                carAudioWs.close();
+                carAudioWs = null;
+            }
+            if (carAudioCtx) {
+                carAudioCtx.close();
+                carAudioCtx = null;
+            }
+            document.getElementById("carAudioBtn").textContent = "🔊 Listen to car";
+        }
+
+        document.getElementById("carAudioBtn").addEventListener("click", () => {
+            if (carAudioWs) {
+                stopCarAudio();
+            } else {
+                startCarAudio();
+            }
+        });
 	</script>
   </body>
 </html>
@@ -947,3 +1018,68 @@ def encoder_loop():
             last_steps = current_steps
 
         time.sleep(0.01)
+
+@app.websocket("/car_audio")
+async def car_audio_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print("=== CAR AUDIO CLIENT CONNECTED ===")
+
+    ffmpeg = None
+    stderr_task = None
+
+    async def show_errors():
+        while True:
+            line = await ffmpeg.stderr.readline()
+            if not line:
+                break
+            print("FFMPEG(car_audio):", line.decode(errors="replace").rstrip())
+
+    try:
+        ffmpeg = await asyncio.create_subprocess_exec(
+            "ffmpeg",
+            "-loglevel", "warning",
+
+            # Capture from the car's Bluetooth mic via PulseAudio
+            "-f", "pulse",
+            "-i", MIC_SOURCE,
+
+            "-ac", "1",
+            "-ar", str(CAR_AUDIO_SAMPLE_RATE),
+
+            # Raw PCM out, easy to play on the browser side
+            "-f", "s16le",
+            "pipe:1",
+
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        stderr_task = asyncio.create_task(show_errors())
+
+        # ~100ms chunks: sample_rate * 2 bytes/sample * 0.1s
+        CHUNK_SIZE = int(CAR_AUDIO_SAMPLE_RATE * 2 * 0.1)
+
+        while True:
+            chunk = await ffmpeg.stdout.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            await websocket.send_bytes(chunk)
+
+    except WebSocketDisconnect:
+        print("=== CAR AUDIO CLIENT DISCONNECTED ===")
+
+    except Exception as e:
+        print("=== CAR AUDIO ERROR ===", repr(e))
+
+    finally:
+        if ffmpeg and ffmpeg.returncode is None:
+            try:
+                ffmpeg.kill()
+            except Exception:
+                pass
+            await ffmpeg.wait()
+
+        if stderr_task:
+            stderr_task.cancel()
+
+        print("=== CAR AUDIO STREAM STOPPED ===")
