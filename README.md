@@ -114,6 +114,12 @@ uvicorn controls:app --host 0.0.0.0 --port 8000 \
   --ssl-keyfile key.pem --ssl-certfile cert.pem
 ```
 
+### To use the two camera feed: 
+- Change `controls:app` to `controls2:app`
+- Controls2.py currently doesn't have two way audio and the wheel angle
+encoder implemented.
+
+## Connect to webpage
 When the server is running, open this address from a device on the same
 network, replacing the IP address with the Raspberry Pi's address:
 
