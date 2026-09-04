@@ -1,8 +1,8 @@
 # Carlene
 
 Carlene is a Raspberry Pi controller for a driveable kid car. It provides a
-FastAPI web interface, two camera feeds, GPIO motor and steering control, a
-rotary encoder, and basic visual mapping.
+FastAPI web interface, a camera feed, GPIO motor and steering control, a
+rotary encoder, and two-way audio streaming.
 
 ## Requirements
 
@@ -10,9 +10,10 @@ Run the application on the Raspberry Pi connected to the car hardware. The
 project currently expects:
 
 - Raspberry Pi OS with Python 3
-- Two cameras supported by `rpicam-vid`
+- A camera supported by `rpicam-vid`
 - GPIO-connected motor/steering hardware
 - A rotary encoder connected to GPIO pins 16 and 26
+- A Bluetooth microphone connected to the Raspberry Pi for car audio
 - The project files copied to the Pi
 
 The GPIO pins used by the application are:
@@ -31,7 +32,7 @@ Update the system and install the camera tools and Python environment support:
 
 ```bash
 sudo apt update
-sudo apt install -y python3 python3-venv python3-pip rpicam-apps openssl
+sudo apt install -y python3 python3-venv python3-pip rpicam-apps ffmpeg openssl
 ```
 
 Confirm that the camera command is available:
@@ -40,8 +41,16 @@ Confirm that the camera command is available:
 rpicam-vid --help
 ```
 
-Connect both cameras, then verify that the Raspberry Pi can detect them before
-starting the server.
+Connect the camera, then verify that the Raspberry Pi can detect it before
+starting the server. The active camera is camera index `1` in `controls.py`.
+
+The audio features also require a working PulseAudio/PipeWire-compatible audio
+setup and a paired Bluetooth microphone. The microphone source name currently
+configured in `controls.py` is:
+
+```text
+bluez_input.00:6A:8E:0E:E7:32
+```
 
 ## Create a Python environment
 
@@ -53,7 +62,7 @@ source ~/venv/bin/activate
 python -m pip install --upgrade pip
 ```
 
-Install the Python dependencies:
+Install the Python dependencies in the environment:
 
 ```bash
 python -m pip install fastapi "uvicorn[standard]" gpiozero opencv-python numpy
@@ -67,15 +76,15 @@ The dependencies are used as follows:
 
 ## Required files and paths
 
-Before starting the application, make sure the logo file exists at:
+Before starting the application, make sure the logo file exists relative to the
+project directory at:
 
 ```text
-/home/wifidriver/Downloads/shopr8v3.png
+Images/shopr8v3.png
 ```
 
-These paths are currently hard-coded in `controls.py`. Either use the
-`wifidriver` home directory on the Pi or update the paths in the code for your
-installation.
+This path is currently hard-coded in `controls.py`. Start Uvicorn from the
+project directory, or update the path in the code for your installation.
 
 ## Create a local HTTPS certificate
 
@@ -84,8 +93,8 @@ self-signed certificate for local use:
 
 ```bash
 openssl req -x509 -newkey rsa:2048 -nodes \
-	-keyout key.pem -out cert.pem -days 365 \
-	-subj "/CN=carlene.local"
+  -keyout key.pem -out cert.pem -days 365 \
+  -subj "/CN=carlene.local"
 ```
 
 Do not use this self-signed certificate for an internet-facing deployment.
@@ -102,7 +111,7 @@ Start the FastAPI application from the project directory:
 
 ```bash
 uvicorn controls:app --host 0.0.0.0 --port 8000 \
-	--ssl-keyfile key.pem --ssl-certfile cert.pem
+  --ssl-keyfile key.pem --ssl-certfile cert.pem
 ```
 
 When the server is running, open this address from a device on the same
@@ -120,8 +129,16 @@ expected for this local certificate.
 - `ModuleNotFoundError`: activate `~/venv` and rerun the dependency install.
 - `rpicam-vid: command not found`: install `rpicam-apps` and check the camera
 	connection.
+- `ffmpeg: command not found`: install `ffmpeg` and confirm it is available with
+	`ffmpeg -version`.
 - GPIO permission errors: run on the Raspberry Pi with the expected GPIO
 	access, and verify the wiring and pin numbers.
-- Missing logo or log errors: check the hard-coded paths listed above.
+- Missing logo errors: check that `Images/shopr8v3.png` exists and that the
+	server was started from the project directory.
+- Bluetooth audio errors: verify that the microphone is paired and that its
+	PulseAudio source name matches `MIC_SOURCE` in `controls.py`.
 - Port `8000` already in use: stop the other server or choose another port and
 	use that port in the browser URL.
+- To find the pi ip enter 'ipconfig' into the terminal
+- The current pi uses an antenna to improve signal, disconnect from byu-devices 
+    under Broadcom Wi-Fi so only MediaTek Wi-Fi is used
