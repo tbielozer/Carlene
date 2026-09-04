@@ -211,7 +211,7 @@ async def shutdown_event():
 @app.get("/car-logo")
 async def car_logo():
     """Serve the logo image used by the embedded controller page."""
-    return FileResponse("/home/wifidriver/Downloads/shopr8v3.png")
+    return FileResponse("./Images/shopr8v3.png")
 
 INDEX_HTML = """
 <!doctype html>

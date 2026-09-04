@@ -73,12 +73,6 @@ Before starting the application, make sure the logo file exists at:
 /home/wifidriver/Downloads/shopr8v3.png
 ```
 
-The application writes mapping coordinates to:
-
-```text
-/home/wifidriver/cam_out.txt
-```
-
 These paths are currently hard-coded in `controls.py`. Either use the
 `wifidriver` home directory on the Pi or update the paths in the code for your
 installation.
