@@ -178,13 +178,13 @@ class Camera:
         print(f"Camera {self.camera_id} stopped")
         
 # Create both camera owners once; the lifecycle hooks start and stop them.
-camera0 = Camera(0)
+# camera0 = Camera(0)
 camera1 = Camera(1)
 
 @app.on_event("startup")
 async def startup_event():
     """Start hardware services when Uvicorn finishes initializing the app."""
-    camera0.start()
+    # camera0.start()
     camera1.start()
     
     # Encoder polling is blocking and continuous, so it must not run inside
@@ -200,10 +200,10 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Release camera processes and GPIO resources during server shutdown."""
-    camera0.stop()
+    # camera0.stop()
     camera1.stop()    
 
-    camera0.stop()
+    # camera0.stop()
     camera1.stop()
 
     print("=== SHUTDOWN COMPLETE ===")
@@ -779,8 +779,8 @@ async def ws_endpoint(websocket: WebSocket):
 	
     print("WebSocket connected")
     
-    last_sent_angle = None  # Retained for compatibility with the handler state.
-    left_clicked = False  # Retained for compatibility with the handler state.
+    # last_sent_angle = None  # Retained for compatibility with the handler state.
+    # left_clicked = False  # Retained for compatibility with the handler state.
 	
     async def steering_sender():
         """Push an update only when the physical steering angle changes."""
@@ -807,7 +807,7 @@ async def ws_endpoint(websocket: WebSocket):
             pass
 
     # Run outbound steering updates alongside inbound browser messages.
-    steering_task = asyncio.create_task(steering_sender())
+    # steering_task = asyncio.create_task(steering_sender())
     try:
         while True:
             global stop_left_turn, turning_left
