@@ -139,6 +139,6 @@ expected for this local certificate.
 	PulseAudio source name matches `MIC_SOURCE` in `controls.py`.
 - Port `8000` already in use: stop the other server or choose another port and
 	use that port in the browser URL.
-- To find the pi ip enter 'ipconfig' into the terminal
+- To find the pi ip enter `ipconfig` into the terminal
 - The current pi uses an antenna to improve signal, disconnect from byu-devices 
     under Broadcom Wi-Fi so only MediaTek Wi-Fi is used
