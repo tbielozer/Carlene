@@ -1,8 +1,9 @@
 # Carlene
 
-Carlene is a Raspberry Pi controller for a driveable kid car. It provides a
-FastAPI web interface, a camera feed, GPIO motor and steering control, a
-rotary encoder, and two-way audio streaming.
+Carlene is a Raspberry Pi controller for a driveable kid car, the kind a 
+child would sit in. It provides a FastAPI web interface, a camera feed, 
+GPIO motor and steering control, a rotary encoder, and two-way audio 
+streaming. It currently taps into the remote to drive the car remotely.
 
 ## Requirements
 
@@ -148,3 +149,21 @@ expected for this local certificate.
 - To find the pi ip enter `ipconfig` into the terminal
 - The current pi uses an antenna to improve signal, disconnect from byu-devices 
     under Broadcom Wi-Fi so only MediaTek Wi-Fi is used
+
+## Editing Code
+There are two main code files, `controls.py` which runs with just one feed and 
+`controls2.py` which uses both pi cameras, most likely for a front and rear camera.
+Updates to one WILL NOT update the other. Currently `controls2.py` is behind.
+
+In `/Webpages` there are files for both one feed and two feed. These are not used 
+directly by either `.py` file but instead are to preview the webpage when making
+changes. After updating either the `.html` or `.py` copy and paste into the respective
+other.
+
+## Possible Future Projects
+Several ideas have been proposed to improve Carlene, the end goal is to make her 
+self-driving. Several future improvements include:
+- Distance sensors for collision detection
+- Lidar to map location in hallway
+- Servo to control camera
+
