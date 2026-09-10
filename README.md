@@ -13,8 +13,8 @@ project currently expects:
 - Raspberry Pi OS with Python 3
 - A camera supported by `rpicam-vid`
 - GPIO-connected motor/steering hardware
-- A rotary encoder connected to GPIO pins 16 and 26
-- A Bluetooth microphone connected to the Raspberry Pi for car audio
+- A rotary encoder
+- A microphone and speaker connected to the pi for 2 way audio
 - The project files copied to the Pi
 
 The GPIO pins used by the application are:
