@@ -102,17 +102,10 @@ Do not use this self-signed certificate for an internet-facing deployment.
 
 ## Start the controller
 
-Activate the environment whenever opening a new shell:
-
+To start the program ensure you are in the `Carlene` directory
+Simply run the start script
 ```bash
-source ~/venv/bin/activate
-```
-
-Start the FastAPI application from the project directory:
-
-```bash
-uvicorn controls:app --host 0.0.0.0 --port 8000 \
-  --ssl-keyfile key.pem --ssl-certfile cert.pem
+./run.sh
 ```
 
 ### To use the two camera feed: 
