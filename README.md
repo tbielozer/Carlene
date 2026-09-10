@@ -109,7 +109,7 @@ Simply run the start script
 ```
 
 ### To use the two camera feed: 
-- Change `controls:app` to `controls2:app`
+- Open `run.sh` in with a text editor and change `controls:app` to `controls2:app`
 - Controls2.py currently doesn't have two way audio and the wheel angle
 encoder implemented.
 
