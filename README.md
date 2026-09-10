@@ -124,6 +124,21 @@ https://<raspberry-pi-ip>:8000/
 Your browser will warn that the certificate is self-signed. The warning is
 expected for this local certificate.
 
+## Controls
+
+Use the keyboard while the controller page is open to drive the car:
+
+- Up Arrow: move forward
+- Down Arrow: move backward
+- Left Arrow: steer left
+- Right Arrow: steer right
+- Space: Hold down to speak
+
+The page displays the current drive state in the status area, such as `FORWARD`, `BACKWARD`, `LEFT`, `RIGHT`, or `STOP`. When the car is moving, the background car audio is muted until movement stops.
+
+To avoid listening to the car engine when driving the audio from car to remote is turned off when driving forward
+or reverse. In addition, that audio feed is paused when the spacebar is held down to avoid feedback. 
+
 ## Troubleshooting
 
 - `ModuleNotFoundError`: activate `~/venv` and rerun the dependency install.
